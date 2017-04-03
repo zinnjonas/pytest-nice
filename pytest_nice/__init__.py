@@ -107,6 +107,14 @@ def pytest_unconfigure(config):
                         row = row.rsplit(">", 1)[1]
                 if "PEP8" in line:
                     found_entry = True
+                    if "Module" not in row:
+                        if "Total" in row:
+                            line = "\t\t\t\t<td>{}</td> <!-- PEP8 -->\n".format(total_fails)
+                        else:
+                            fails = 0
+                            if row in list(items.keys()):
+                                fails = items[row]
+                            line = "\t\t\t\t<td>{}</td> <!-- PEP8 -->\n".format(fails)
 
                 if "<tr" in line:
                     header = True
@@ -124,8 +132,6 @@ def pytest_unconfigure(config):
                     found_entry = False
                 index.write(line)
             index.close()
-
-
 
 
 def pytest_runtest_logreport(report):
