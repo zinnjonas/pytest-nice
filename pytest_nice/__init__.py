@@ -147,4 +147,3 @@ def pytest_runtest_logreport(report):
                     interest = line.split(report.location[0], 1)[1][1:]
                     pep8.write("\t{}".format(interest))
                     pep8.write("\n")
-            pep8.write("\n")
