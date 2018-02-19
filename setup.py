@@ -5,7 +5,7 @@ from setuptools import setup
 setup(
     name='pytest-nice',
     description='pytest plugin to make even nicer html reports',
-    version="v0.1",
+    version="v0.2",
     author='Jonas Zinn',
     author_email='Jonas.S.Zinn@gmail.com',
     url='https://github.com/zinnjonas/pytest-nice',
