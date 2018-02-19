@@ -3,22 +3,24 @@
 
 import pytest
 import os
+import sys
 
 pep8 = None
+directory = ""
 
 
 @pytest.hookimpl(trylast=True)
 def pytest_configure(config):
+    print(os.getcwd())
     if os.path.exists(".pep8rc"):
         os.remove(".pep8rc")
 
 
 @pytest.hookimpl(trylast=True)
 def pytest_unconfigure(config):
-    global pep8
+    global pep8, directory
     cov = config.pluginmanager.getplugin("pytest_cov")
     if cov:
-        directory = ""
         content = False
         if os.path.exists("setup.cfg"):
             file = open("setup.cfg", "r")
@@ -28,7 +30,7 @@ def pytest_unconfigure(config):
                     content = True
                 if content and "[" not in line:
                     if "directory" in line:
-                        directory = line.split("=", 1)[1].strip()
+                        directory2 = os.path.join(directory, line.split("=", 1)[1].strip())
         if os.path.exists(".coveragerc"):
             file = open(".coveragerc", "r")
             lines = file.read()
@@ -37,12 +39,12 @@ def pytest_unconfigure(config):
                     content = True
                 if content and "[" not in line:
                     if "directory" in line:
-                        directory = line.split("=", 1)[1].strip()
+                        directory2 = os.path.join(directory, line.split("=", 1)[1].strip())
 
     if pep8:
         pep8.close()
         if directory:
-            pep8 = open(".pep8rc")
+            pep8 = open(os.path.join(directory, ".pep8rc"))
             name = pep8.readline().strip()
             items = {}
             total_fails = 0
@@ -56,7 +58,7 @@ def pytest_unconfigure(config):
                     pep8fail = pep8.readline().strip()
                 items[name] = len(fails)
                 total_fails += len(fails)
-                file = "{}{}{}.html".format(directory, os.sep, name.replace(os.sep, "_").replace(".py", "_py"))
+                file = "{}{}{}.html".format(directory2, os.sep, name.replace(os.sep, "_").replace(".py", "_py"))
                 if os.path.exists(file):
                     content = open(file, "r")
                     lines = content.read().splitlines()
@@ -70,15 +72,21 @@ def pytest_unconfigure(config):
                             if "PEP8" not in lines[index + 1]:
                                 content.write("\t\t\t<span style='color:orange;background:gray'>{} PEP8</span>".format(len(fails)))
                                 content.write("\n")
-                        elif fails != {}:
+                        elif pos < len(fails): 
                             if "t{}".format(keys[pos]) in line:
                                 if "<span style='color:orange;background:gray'>" not in line:
-                                    content.write("{}<span style='color:orange;background:gray'>{}</span>".format(line[:-4], fails[keys[pos]]))
-                                    content.write("</p>\n")
+                                    try:
+                                        content.write("{}<span style='color:orange;background:gray'>{}</span>".format(line[:-4], fails[keys[pos]]))
+                                        content.write("</p>\n")
+                                    except:
+                                        print(file)
+                                        print(pos)
+                                        print(keys)
+                                        print(keys[pos])
+                                        print(fails)
                                 else:
                                     content.write(line)
                                     content.write("\n")
-                                del fails[keys[pos]]
                                 pos += 1
                             else:
                                 content.write(line)
@@ -88,10 +96,10 @@ def pytest_unconfigure(config):
                             content.write("\n")
                     content.close()
                 name = pep8fail
-            index = open(directory +  os.sep + "index.html", "r")
+            index = open(os.path.join(directory2, "index.html"), "r")
             index_lines = index.readlines()
             index.close()
-            index = open(directory + os.sep + "/index.html", "w")
+            index = open(os.path.join(directory2, "index.html"), "w")
             header = False
             found_entry = False
             row = ""
@@ -135,8 +143,9 @@ def pytest_unconfigure(config):
 
 
 def pytest_runtest_logreport(report):
-    global pep8
+    global pep8, directory
     if report.failed:
+        directory = os.getcwd()
         if report.when == "call" and "PEP8-check" in report.location[2]:
             if not pep8:
                 pep8 = open(".pep8rc", "w")
